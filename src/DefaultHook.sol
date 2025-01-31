@@ -45,16 +45,14 @@ contract DefaultHook is BaseHook {
         });
     }
 
-    function beforeSwap(address sender, PoolKey calldata, IPoolManager.SwapParams calldata, bytes calldata hookData)
+    function beforeSwap(address, PoolKey calldata, IPoolManager.SwapParams calldata, bytes calldata)
         external
         view
         override
         returns (bytes4, BeforeSwapDelta, uint24)
     {
-        address user = tx.origin;
-
         // override swap fee by making a call to the DefaultSettings contract
-        uint24 protocolFeePercentage = defaultSettings.beforeSwapFeeOverride(user);
+        uint24 protocolFeePercentage = defaultSettings.beforeSwapFeeOverride();
 
         // The protocol fee will be applied as part of the LP fees in the PoolManager
         return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, protocolFeePercentage);

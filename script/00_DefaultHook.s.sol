@@ -21,6 +21,9 @@ contract CounterScript is Script, Constants {
         // deploy default settings contract (disable this if there is already a deployment)
         address bonsaiNFT = 0xE9d2FA815B95A9d087862a09079549F351DaB9bd; // base sepolia
 
+        // base mainnet
+        if (block.chainid == 8453) bonsaiNFT = 0xf060fd6b66B13421c1E514e9f10BedAD52cF241e;
+
         vm.startBroadcast(deployerPrivateKey);
 
         DefaultSettings defaultSettings = new DefaultSettings(bonsaiNFT);

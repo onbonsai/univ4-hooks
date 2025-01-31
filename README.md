@@ -8,6 +8,12 @@ Default Settings: 0x009f089812c23F2562bB8448F3377c9A384f2Eb6
 
 Default Hook: 0x56464A8f627495cf7FDBd57Ef8dC5A853d14C080
 
+### Base Mainnet
+
+Default Settings: 0x419F1450368F63A8C7aB67BD96B6d0ff2E062329
+
+Default Hook: 0x8dd4c756F183513850e874F7d1ffd0d7Cb498080
+
 ## Uniswap docs
 
 ### **A template for writing Uniswap v4 Hooks 🦄**

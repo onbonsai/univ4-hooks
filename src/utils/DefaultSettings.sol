@@ -16,11 +16,13 @@ contract DefaultSettings {
         bonsaiNFT = IERC721(_bonsaiNFT);
     }
 
-    function beforeSwapFeeOverride(address sender) public view returns (uint24) {
-        if (sender == address(0)) return 15000 | LPFeeLibrary.OVERRIDE_FEE_FLAG;
+    function beforeSwapFeeOverride() public view returns (uint24) {
+        address user = tx.origin;
+
+        if (user == address(0)) return 15000 | LPFeeLibrary.OVERRIDE_FEE_FLAG;
 
         // Get the balance of Bonsai NFTs in the user's wallet
-        uint256 nftBalance = bonsaiNFT.balanceOf(sender);
+        uint256 nftBalance = bonsaiNFT.balanceOf(user);
 
         if (nftBalance > 0) {
             return 0 | LPFeeLibrary.OVERRIDE_FEE_FLAG; // 0% fee if user has any NFTs
