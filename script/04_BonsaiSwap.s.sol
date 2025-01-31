@@ -37,7 +37,7 @@ contract SwapScript is Script, Constants, Config {
 
     // --- pool configuration --- //
     // fees paid by swappers that accrue to liquidity providers
-    uint24 lpFee = 15_000; // 1.5%
+    uint24 lpFee = 0x800000; // override fee flag
     int24 tickSpacing = 60;
 
     function run() external {
