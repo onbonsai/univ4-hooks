@@ -20,21 +20,26 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
     // --- Parameters to Configure --- //
     /////////////////////////////////////
 
+    uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+
     // --- pool configuration --- //
     // fees paid by swappers that accrue to liquidity providers
-    uint24 lpFee = 3000; // 0.30%
+    // uint24 lpFee = 10000; // 1%
+    uint24 lpFee = 500; // 0.05%
     int24 tickSpacing = 60;
 
     // starting price of the pool, in sqrtPriceX96
-    uint160 startingPrice = 79228162514264337593543950336; // floor(sqrt(1) * 2^96)
+    // uint160 startingPrice = 79228162514264337593543950336; // floor(sqrt(1) * 2^96)
+    uint160 startingPrice = 79228162514264337593543950336000000; // floor(sqrt(1) * 2^96)
 
     // --- liquidity position configuration --- //
-    uint256 public token0Amount = 1e18;
+    // uint256 public token0Amount = 1e18;
+    uint256 public token0Amount = 1e6;
     uint256 public token1Amount = 1e18;
 
-    // range of the position
-    int24 tickLower = -600; // must be a multiple of tickSpacing
-    int24 tickUpper = 600;
+    // range of the position - full range
+    int24 tickLower = -887220; // must be a multiple of tickSpacing
+    int24 tickUpper = 887220;
     /////////////////////////////////////
 
     function run() external {
@@ -80,12 +85,12 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
         // if the pool is an ETH pair, native tokens are to be transferred
         uint256 valueToPass = currency0.isAddressZero() ? amount0Max : 0;
 
-        vm.startBroadcast();
+        vm.startBroadcast(deployerPrivateKey);
         tokenApprovals();
         vm.stopBroadcast();
 
         // multicall to atomically create pool & add liquidity
-        vm.broadcast();
+        vm.broadcast(deployerPrivateKey);
         posm.multicall{value: valueToPass}(params);
     }
 

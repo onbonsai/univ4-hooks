@@ -18,6 +18,8 @@ contract CreatePoolOnly is Script, Constants, Config {
     // --- Parameters to Configure --- //
     /////////////////////////////////////
 
+    uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+
     // --- pool configuration --- //
     // fees paid by swappers that accrue to liquidity providers
     uint24 lpFee = 3000; // 0.30%
@@ -45,7 +47,7 @@ contract CreatePoolOnly is Script, Constants, Config {
         });
         bytes memory hookData = new bytes(0);
 
-        vm.broadcast();
+        vm.broadcast(deployerPrivateKey);
         IPoolManager(POOLMANAGER).initialize(pool, startingPrice);
     }
 }

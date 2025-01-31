@@ -7,5 +7,13 @@ fs_permissions = [{ access = "read-write", path = ".forge-snapshots/"}]
 solc_version = "0.8.26"
 evm_version = "cancun"
 
+[rpc_endpoints]
+base-sepolia = "https://sepolia.base.org"
+base = "https://mainnet.base.org"
+
+[etherscan]
+base-sepolia = { key = "${BASESCAN_API_KEY}" }
+base = { key = "${BASESCAN_API_KEY}" }
+
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
