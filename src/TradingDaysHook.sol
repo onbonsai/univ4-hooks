@@ -9,15 +9,15 @@ import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
 
-import {DefaultSettings} from "../utils/DefaultSettings.sol";
+import {DefaultSettings} from "./utils/DefaultSettings.sol";
 
-import {TradingDays, LibDateTime, HolidayCalendar, DaylightSavingsCalendar} from "./TradingDays.sol";
+import {TradingDays, LibDateTime, HolidayCalendar, DaylightSavingsCalendar} from "trading-days/TradingDays.sol";
 
 /**
- * @title TradingHoursHook
+ * @title TradingDaysHook
  * @notice This hook only allows trading during New York trading hours. Fork of https://github.com/horsefacts/trading-days
  */
-contract TradingHoursHook is BaseHook, TradingDays {
+contract TradingDaysHook is BaseHook, TradingDays {
     using PoolIdLibrary for PoolKey;
     using LibDateTime for uint256;
 
@@ -57,9 +57,8 @@ contract TradingHoursHook is BaseHook, TradingDays {
         });
     }
 
-    function beforeSwap(address, PoolKey calldata, IPoolManager.SwapParams calldata, bytes calldata)
+    function beforeSwap(address sender, PoolKey calldata, IPoolManager.SwapParams calldata, bytes calldata)
         external
-        view
         override
         returns (bytes4, BeforeSwapDelta, uint24)
     {
