@@ -21,7 +21,7 @@ contract SwapScript is Script, Constants, Config {
     /////////////////////////////////////
 
     // PoolSwapTest Contract address, default to the anvil address
-    PoolSwapTest swapRouter = PoolSwapTest(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9);
+    PoolSwapTest swapRouterContract = PoolSwapTest(swapRouter);
 
     // --- pool configuration --- //
     // fees paid by swappers that accrue to liquidity providers
@@ -39,9 +39,9 @@ contract SwapScript is Script, Constants, Config {
 
         // approve tokens to the swap router
         vm.broadcast();
-        token0.approve(address(swapRouter), type(uint256).max);
+        token0.approve(address(swapRouterContract), type(uint256).max);
         vm.broadcast();
-        token1.approve(address(swapRouter), type(uint256).max);
+        token1.approve(address(swapRouterContract), type(uint256).max);
 
         // ------------------------------ //
         // Swap 100e18 token0 into token1 //
@@ -60,6 +60,6 @@ contract SwapScript is Script, Constants, Config {
 
         bytes memory hookData = new bytes(0);
         vm.broadcast();
-        swapRouter.swap(pool, params, testSettings, hookData);
+        swapRouterContract.swap(pool, params, testSettings, hookData);
     }
 }

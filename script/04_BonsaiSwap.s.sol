@@ -33,7 +33,7 @@ contract SwapScript is Script, Constants, Config {
     uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
     address deployerAddress = vm.addr(deployerPrivateKey);
 
-    address swapRouter = 0x492E6456D9528771018DeB9E87ef7750EF184104; // base sepolia universal router
+    // address swapRouter = 0x492E6456D9528771018DeB9E87ef7750EF184104; // base sepolia universal router
 
     // --- pool configuration --- //
     // fees paid by swappers that accrue to liquidity providers

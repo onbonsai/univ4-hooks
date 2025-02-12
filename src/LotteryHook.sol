@@ -13,19 +13,18 @@
 pragma solidity ^0.8.24;
 
 import {BaseHook} from "v4-periphery/src/base/hooks/BaseHook.sol";
-
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
-import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
 import {Currency} from "v4-core/src/types/Currency.sol";
 import {SafeCast} from "v4-core/src/libraries/SafeCast.sol";
 import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 import {BeforeSwapDelta, toBeforeSwapDelta} from "v4-core/src/types/BeforeSwapDelta.sol";
 
-import {DefaultSettings} from "./utils/DefaultSettings.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import {DefaultSettings} from "./utils/DefaultSettings.sol";
 
 /**
  * @title LotteryHook
@@ -39,7 +38,6 @@ contract LotteryHook is BaseHook {
 
     error MustUseDynamicFee();
     error NoSwappersInLottery();
-    error PoolNotInitialized();
 
     struct LotteryState {
         address[] swappers;
@@ -82,7 +80,7 @@ contract LotteryHook is BaseHook {
             afterSwap: false,
             beforeDonate: false,
             afterDonate: false,
-            beforeSwapReturnDelta: false,
+            beforeSwapReturnDelta: true,
             afterSwapReturnDelta: false,
             afterAddLiquidityReturnDelta: false,
             afterRemoveLiquidityReturnDelta: false
@@ -142,7 +140,7 @@ contract LotteryHook is BaseHook {
         );
 
         // 10% chance to run lottery if conditions are met
-        if (shouldRunLottery && _random() % 10 == 0) {
+        if (shouldRunLottery && _random() % LOTTERY_CHANCE == 0) {
             _runLottery(poolId, key);
         }
 
