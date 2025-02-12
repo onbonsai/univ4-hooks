@@ -23,15 +23,19 @@ import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeS
 import {DefaultSettings} from "./utils/DefaultSettings.sol";
 
 /**
- * @title SurgePricingHook
+ * @title LotteryHook
  * @author @c0rv0s
- * @notice High fees when there's lots of volatility, low fees then there isn't
+ * @notice Pays out fees to random winner
  *
- *  TODO: 
- *  1. volatility oracle, try copying the uniswap thing they had
- *  2. dynamic fee based on that
+ * TODO:
+ * 1. track swappers
+ * 2. after some threshold, x amount of time or number of swaps start the lottery, 10% chance on each swap to pay out all fees
+ * 2a. every 72 hours or 1k swaps, start the lottery
+ * 3. pay out the winner and reset the array of swappers
+
+ * Question: how to siphon off fees into a separate pool for the lottery?
  */
-contract SurgePricingHook is BaseHook {
+contract LotteryHook is BaseHook {
     using PoolIdLibrary for PoolKey;
 
     error MustUseDynamicFee();

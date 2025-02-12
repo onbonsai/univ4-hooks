@@ -9,10 +9,11 @@ import {Constants} from "./base/Constants.sol";
 import {HookMiner} from "../test/utils/HookMiner.sol";
 
 import {DefaultSettings} from "../src/utils/DefaultSettings.sol";
-import {DefaultHook} from "../src/DefaultHook.sol";
+import {TradingDaysHook} from "../src/TradingDaysHook.sol";
+import {HolidayCalendar, DaylightSavingsCalendar} from "trading-days/TradingDays.sol";
 
-/// @notice Mines the address and deploys the Counter.sol Hook contract
-contract CounterScript is Script, Constants {
+/// @notice Mines the address and deploys the TradingDaysHook.sol Hook contract
+contract TradingDays is Script, Constants {
     uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
 
     function setUp() public {}
@@ -26,22 +27,28 @@ contract CounterScript is Script, Constants {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        DefaultSettings defaultSettings = new DefaultSettings(bonsaiNFT);
+        // DefaultSettings defaultSettings = new DefaultSettings(bonsaiNFT); // disable this if there is already a deployment
+        DefaultSettings defaultSettings = DefaultSettings(0x419F1450368F63A8C7aB67BD96B6d0ff2E062329); // Base Mainnet
         console2.log("defaultSettings address:", address(defaultSettings));
+
+        // Holidays
+        HolidayCalendar holidays = new HolidayCalendar();
+        // Daylight Savings
+        DaylightSavingsCalendar dst = new DaylightSavingsCalendar();
 
         // hook contracts must have specific flags encoded in the address
         uint160 flags = uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG);
 
         // Mine a salt that will produce a hook address with the correct flags
-        bytes memory constructorArgs = abi.encode(POOLMANAGER, address(defaultSettings));
+        bytes memory constructorArgs = abi.encode(POOLMANAGER, address(defaultSettings), holidays, dst);
         (address hookAddress, bytes32 salt) =
-            HookMiner.find(CREATE2_DEPLOYER, flags, type(DefaultHook).creationCode, constructorArgs);
+            HookMiner.find(CREATE2_DEPLOYER, flags, type(TradingDaysHook).creationCode, constructorArgs);
 
         console2.log("mined hook address:", hookAddress);
 
         // Deploy the hook using CREATE2
-        DefaultHook defaultHook = new DefaultHook{salt: salt}(IPoolManager(POOLMANAGER), address(defaultSettings));
-        require(address(defaultHook) == hookAddress, "DefaultHookScript: hook address mismatch");
+        TradingDaysHook newHook = new TradingDaysHook{salt: salt}(IPoolManager(POOLMANAGER), address(defaultSettings), holidays, dst);
+        require(address(newHook) == hookAddress, "DeployScript: hook address mismatch");
 
         vm.stopBroadcast();
     }

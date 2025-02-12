@@ -1,4 +1,15 @@
 // SPDX-License-Identifier: MIT
+
+/*
+░▒▓███████▓▒░ ░▒▓██████▓▒░░▒▓███████▓▒░ ░▒▓███████▓▒░░▒▓██████▓▒░░▒▓█▓▒░
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░
+░▒▓███████▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░░▒▓████████▓▒░▒▓█▓▒░
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░
+░▒▓███████▓▒░ ░▒▓██████▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓███████▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░
+*/
+
 pragma solidity ^0.8.24;
 
 import {BaseHook} from "v4-periphery/src/base/hooks/BaseHook.sol";
@@ -15,9 +26,17 @@ import {DefaultSettings} from "./utils/DefaultSettings.sol";
  * @title CompoundFees
  * @author @c0rv0s
  * @notice Collects trading fees only in quote token and compounds them for better liquidity
+ *
+ *  TODO: 
+ *  1. collect fees only in bonsai
+ *  2a. periodically add those back into liquidity?
+ *  2b. or split collected fees, like 50/50 or 90/10, based on init args, one section stays in normal fees 
+ *  for creator to collect, the other split goes into the compounding pool, gets added back in periodically?
  */
 contract CompoundFees is BaseHook {
     using PoolIdLibrary for PoolKey;
+
+    error MustUseDynamicFee();
 
     DefaultSettings immutable defaultSettings;
 
@@ -27,7 +46,7 @@ contract CompoundFees is BaseHook {
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
         return Hooks.Permissions({
-            beforeInitialize: false,
+            beforeInitialize: true,
             afterInitialize: false,
             beforeAddLiquidity: false,
             afterAddLiquidity: false,
@@ -42,6 +61,19 @@ contract CompoundFees is BaseHook {
             afterAddLiquidityReturnDelta: false,
             afterRemoveLiquidityReturnDelta: false
         });
+    }
+
+    // Check if the pool is enabled for dynamic fee
+    function beforeInitialize(address, PoolKey calldata key, uint160)
+        external
+        pure
+        override
+        returns (bytes4)
+    {
+        
+        if (key.fee != 0x800000) revert MustUseDynamicFee();
+
+        return BaseHook.beforeInitialize.selector;
     }
 
     function beforeSwap(address, PoolKey calldata, IPoolManager.SwapParams calldata, bytes calldata)
