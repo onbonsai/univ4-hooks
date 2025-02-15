@@ -8,32 +8,36 @@ import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {Currency} from "v4-core/src/types/Currency.sol";
-import {IUniversalRouter, Commands} from "../src/interfaces/UniversalRouter.sol";
 import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {Actions} from "v4-periphery/src/libraries/Actions.sol";
 import {IV4Router} from "v4-periphery/src/interfaces/IV4Router.sol";
 
+import {IUniversalRouter, Commands} from "../../src/interfaces/UniversalRouter.sol";
+
 import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
+import {MockERC721} from "../../test/mocks/MockERC721.sol";
 
-import {Constants} from "./base/Constants.sol";
-import {HookMiner} from "../test/utils/HookMiner.sol";
+import {Constants} from "../base/Constants.sol";
+import {HookMiner} from "../../test/utils/HookMiner.sol";
 
-import {DefaultSettings} from "../src/utils/DefaultSettings.sol";
-import {LotteryHook} from "../src/LotteryHook.sol";
+import {DefaultSettings} from "../../src/utils/DefaultSettings.sol";
+import {BuybackAndBurn} from "../../src/BuybackAndBurn.sol";
 
-import {Constants} from "./base/Constants.sol";
-import {Config} from "./base/Config.sol";
+import {Constants} from "../base/Constants.sol";
+import {Config} from "../base/Config.sol";
 
 /// @notice Runs a full lifecycle for a hook
-contract FullRunScript is Script, Constants, Config {
+contract BuybackAndBurnLifecycle is Script, Constants, Config {
     uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
     address deployerAddress = vm.addr(deployerPrivateKey);
 
-    LotteryHook lotteryHook;
+    BuybackAndBurn buybackAndBurnHook;
 
     uint24 lpFee = 0x800000;
     int24 tickSpacing = 60;
+
+    uint256 swapThreshold = 2;
 
     function deployTokens() public {
         MockERC20 token0Contract = new MockERC20("Token 0", "T0", 18);
@@ -61,16 +65,10 @@ contract FullRunScript is Script, Constants, Config {
         console2.log("Step 1 complete");
         step2();
         console2.log("Step 2 complete");
-
-        console.log("hook balance token0", token0.balanceOf(address(lotteryHook)));
-        console.log("hook balance token1", token1.balanceOf(address(lotteryHook)));
-
         step3();
         console2.log("Step 3 complete");
-        step3();
-
-        console.log("hook balance token0", token0.balanceOf(address(lotteryHook)));
-        console.log("hook balance token1", token1.balanceOf(address(lotteryHook)));
+        step4();
+        console2.log("Step 4 complete");
     }
 
     /// @notice deploy the hook
@@ -81,25 +79,34 @@ contract FullRunScript is Script, Constants, Config {
         // base mainnet
         if (block.chainid == 8453) bonsaiNFT = 0xf060fd6b66B13421c1E514e9f10BedAD52cF241e;
 
+        // deploy mock bonsai nft
+        bonsaiNFT = address(new MockERC721("Bonsai NFT", "BNS"));
+
         vm.startBroadcast(deployerPrivateKey);
 
         DefaultSettings defaultSettings = new DefaultSettings(bonsaiNFT);
 
         // hook contracts must have specific flags encoded in the address
-        uint160 flags = uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG);
+        uint160 flags = uint160(
+            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG
+                | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG | Hooks.AFTER_SWAP_RETURNS_DELTA_FLAG
+        );
 
         // Mine a salt that will produce a hook address with the correct flags
-        bytes memory constructorArgs = abi.encode(POOLMANAGER, address(defaultSettings));
+        bytes memory constructorArgs =
+            abi.encode(POOLMANAGER, address(defaultSettings), address(token0), swapRouter, swapThreshold);
         (address hookAddress, bytes32 salt) =
-            HookMiner.find(CREATE2_DEPLOYER, flags, type(LotteryHook).creationCode, constructorArgs);
+            HookMiner.find(CREATE2_DEPLOYER, flags, type(BuybackAndBurn).creationCode, constructorArgs);
 
         // Deploy the hook using CREATE2
-        lotteryHook = new LotteryHook{salt: salt}(IPoolManager(POOLMANAGER), address(defaultSettings));
-        require(address(lotteryHook) == hookAddress, "LotteryHookScript: hook address mismatch");
+        buybackAndBurnHook = new BuybackAndBurn{salt: salt}(
+            IPoolManager(POOLMANAGER), address(defaultSettings), address(token0), swapRouter, swapThreshold
+        );
+        require(address(buybackAndBurnHook) == hookAddress, "buybackAndBurnHookScript: hook address mismatch");
 
         vm.stopBroadcast();
 
-        hookContract = IHooks(lotteryHook);
+        hookContract = IHooks(buybackAndBurnHook);
     }
 
     /// @notice create a pool and add liquidity
@@ -186,12 +193,43 @@ contract FullRunScript is Script, Constants, Config {
         PERMIT2.approve(address(token0), address(swapRouter), type(uint160).max, type(uint48).max);
         PERMIT2.approve(address(token1), address(swapRouter), type(uint160).max, type(uint48).max);
 
+        console.log("before swap zero for one");
+        console.log("hook balance token0", token0.balanceOf(address(buybackAndBurnHook)));
+        console.log("hook balance token1", token1.balanceOf(address(buybackAndBurnHook)));
+
         // swap tokens
-        uint256 amountOut = swapExactInputSingle(pool, 1e18, 0);
+        uint256 amountOut = swapExactInputSingle(pool, 1e18, 0, true);
+        console.log("amountOut", amountOut);
+
+        console.log("after swap");
+        console.log("hook balance token0", token0.balanceOf(address(buybackAndBurnHook)));
+        console.log("hook balance token1", token1.balanceOf(address(buybackAndBurnHook)));
+
+        uint256 amountOut2 = swapExactInputSingle(pool, 1e18, 0, false);
+        console.log("amountOut2", amountOut2);
+
+        console.log("after swap 2 one for zero");
+        console.log("hook balance token0", token0.balanceOf(address(buybackAndBurnHook)));
+        console.log("hook balance token1", token1.balanceOf(address(buybackAndBurnHook)));
 
         vm.stopBroadcast();
+    }
 
-        console.log("amountOut", amountOut);
+    /// @notice buyback and burn tokens
+    function step4() public {
+        PoolKey memory pool = PoolKey({
+            currency0: currency0,
+            currency1: currency1,
+            fee: lpFee,
+            tickSpacing: tickSpacing,
+            hooks: hookContract
+        });
+
+        vm.startBroadcast(deployerPrivateKey);
+
+        buybackAndBurnHook.buybackAndBurn(pool, 9e16);
+
+        vm.stopBroadcast();
     }
 
     /// @dev helper function for encoding mint liquidity operation
@@ -225,7 +263,7 @@ contract FullRunScript is Script, Constants, Config {
         }
     }
 
-    function swapExactInputSingle(PoolKey memory key, uint128 amountIn, uint128 minAmountOut)
+    function swapExactInputSingle(PoolKey memory key, uint128 amountIn, uint128 minAmountOut, bool zeroForOne)
         public
         returns (uint256 amountOut)
     {
@@ -242,14 +280,14 @@ contract FullRunScript is Script, Constants, Config {
         params[0] = abi.encode(
             IV4Router.ExactInputSingleParams({
                 poolKey: key,
-                zeroForOne: true,
+                zeroForOne: zeroForOne,
                 amountIn: amountIn,
                 amountOutMinimum: minAmountOut,
                 hookData: bytes("")
             })
         );
-        params[1] = abi.encode(key.currency0, amountIn);
-        params[2] = abi.encode(key.currency1, minAmountOut);
+        params[1] = abi.encode(zeroForOne ? key.currency0 : key.currency1, amountIn);
+        params[2] = abi.encode(zeroForOne ? key.currency1 : key.currency0, minAmountOut);
 
         // Combine actions and params into inputs
         inputs[0] = abi.encode(actions, params);
