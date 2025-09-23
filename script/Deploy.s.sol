@@ -33,12 +33,12 @@ contract TaxDeploy is Script, Constants {
         );
 
         address quote = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913; // USDC on base
-        uint24 buyTax = uint24(200);
+        uint24 buyTax = uint24(300);
         uint24 sellTax = uint24(900);
-        address recipient = address(0x123); // TODO: protocol address
+        address recipient = 0x947e5F18479C665c7b0CECFBab40c196DF87ef00; // TODO: treasury vault address
 
         // Mine a salt that will produce a hook address with the correct flags
-        bytes memory constructorArgs = abi.encode(POOLMANAGER, quote, buyTax, sellTax, recipient); // Example; adjust as needed
+        bytes memory constructorArgs = abi.encode(POOLMANAGER, quote, buyTax, sellTax, recipient);
         (address hookAddress, bytes32 salt) =
             HookMiner.find(CREATE2_DEPLOYER, flags, type(Tax).creationCode, constructorArgs);
 
