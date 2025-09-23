@@ -32,10 +32,7 @@ contract CreateZstratTaxPoolScript is Script, Constants {
     uint24 lpFee = 10000; // 1% fee (in pips)
     int24 tickSpacing = 60; // Standard tick spacing for 1% fee
 
-    // Starting price - assumes 1 ZSTRAT = some fraction of 1 USDC
-    // This price assumes ZSTRAT is much cheaper than USDC (1 billion ZSTRAT for 10 USDC)
-    // Price = (10 USDC / 1e6) / (1e9 ZSTRAT / 1e18) = 10 * 1e18 / (1e9 * 1e6) = 10 * 1e3 = 10000
-    // sqrtPriceX96 = sqrt(price) * 2^96 = sqrt(10000) * 2^96 = 100 * 2^96
+    // use calc.py to calculate the starting price based on the starting amounts
     uint160 startingPrice = 7922816251426434048;
 
     // Liquidity amounts
