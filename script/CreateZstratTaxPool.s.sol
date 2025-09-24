@@ -22,22 +22,23 @@ contract CreateZstratTaxPoolScript is Script, Constants {
     /////////////////////////////////////
 
     uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+    address deployerAddress = vm.addr(deployerPrivateKey);
 
     // Token addresses on Base
     address constant USDC_BASE = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913; // USDC on Base
-    address constant ZSTRAT_BASE = 0x076cA43b614D63b164332aAB31BBcA841f8Df871; // ZSTRAT token
-    address constant TAX_HOOK = 0x3F6C4280A39be7354da82a74b685bc72563f80CC; // Deployed Tax Hook
+    address constant ZSTRAT_BASE = 0x2Add1065570c3847716aA9C52DF81A5E56172055; // ZSTRAT token
+    address constant TAX_HOOK = 0x8F79b9131d74b32642868fB4593DA678029180CC; // Deployed Tax Hook
 
     // Pool configuration
     uint24 lpFee = 10000; // 1% fee (in pips)
     int24 tickSpacing = 60; // Standard tick spacing for 1% fee
 
     // use calc.py to calculate the starting price based on the starting amounts
-    uint160 startingPrice = 7922816251426434048;
+    uint160 startingPrice = 2505414483750479200256;
 
     // Liquidity amounts
-    uint256 public usdcAmount = 10e6; // 10 USDC (6 decimals)
-    uint256 public zstratAmount = 1e9 * 1e18; // 1 billion ZSTRAT (18 decimals)
+    uint256 public usdcAmount = 1e6; // 10 USDC (6 decimals)
+    uint256 public zstratAmount = 1_000 ether; // 1 billion ZSTRAT (18 decimals)
 
     // Full range position
     int24 tickLower = -887220; // Must be multiple of tickSpacing
@@ -117,7 +118,7 @@ contract CreateZstratTaxPoolScript is Script, Constants {
         uint256 amount1Max = token1Amount + 1 wei;
 
         (bytes memory actions, bytes[] memory mintParams) =
-            _mintLiquidityParams(pool, tickLower, tickUpper, liquidity, amount0Max, amount1Max, msg.sender, hookData);
+            _mintLiquidityParams(pool, tickLower, tickUpper, liquidity, amount0Max, amount1Max, deployerAddress, hookData);
 
         // Multicall parameters
         bytes[] memory params = new bytes[](2);

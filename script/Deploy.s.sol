@@ -25,6 +25,7 @@ contract TaxDeploy is Script, Constants {
 
     function run() public {
         vm.startBroadcast(deployerPrivateKey);
+        address deployerAddress = vm.addr(deployerPrivateKey);
 
         // hook contracts must have specific flags encoded in the address
         uint160 flags = uint160(
@@ -35,17 +36,17 @@ contract TaxDeploy is Script, Constants {
         address quote = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913; // USDC on base
         uint24 buyTax = uint24(300);
         uint24 sellTax = uint24(900);
-        address recipient = 0x947e5F18479C665c7b0CECFBab40c196DF87ef00; // TODO: treasury vault address
+        address recipient = address(0); // can be set later
 
         // Mine a salt that will produce a hook address with the correct flags
-        bytes memory constructorArgs = abi.encode(POOLMANAGER, quote, buyTax, sellTax, recipient);
+        bytes memory constructorArgs = abi.encode(POOLMANAGER, quote, buyTax, sellTax, recipient, deployerAddress);
         (address hookAddress, bytes32 salt) =
             HookMiner.find(CREATE2_DEPLOYER, flags, type(Tax).creationCode, constructorArgs);
 
         console2.log("mined hook address:", hookAddress);
 
         // Deploy the hook using CREATE2
-        Tax newHook = new Tax{salt: salt}(IPoolManager(POOLMANAGER), quote, buyTax, sellTax, recipient);
+        Tax newHook = new Tax{salt: salt}(IPoolManager(POOLMANAGER), quote, buyTax, sellTax, recipient, deployerAddress);
         require(address(newHook) == hookAddress, "DeployScript: hook address mismatch");
 
         vm.stopBroadcast();
